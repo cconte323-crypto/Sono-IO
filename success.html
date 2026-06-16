@@ -74,7 +74,7 @@
       resultEl.innerHTML = '<p class="error">No session ID found. If you just paid, check your email or contact support.</p>';
     } else {
       let attempts = 0;
-      const maxAttempts = 8; // ~16 seconds total
+      const maxAttempts = 15; // ~30 seconds total
 
       function checkCredits() {
         attempts++;
