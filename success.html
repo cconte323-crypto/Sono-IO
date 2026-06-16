@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sono IO — Payment Successful</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f0f;
+      color: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 40px 20px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    .container { max-width: 480px; }
+    h1 { font-size: 1.8rem; margin-bottom: 8px; }
+    h1 span { color: #4ade80; }
+    p { color: #9ca3af; line-height: 1.7; }
+    .credits-box {
+      background: #1a1a1a;
+      border: 1px solid #2d2d2d;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 24px 0;
+    }
+    .credits-num {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #4ade80;
+    }
+    .spinner {
+      border: 3px solid #2d2d2d;
+      border-top: 3px solid #4ade80;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      margin: 16px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error { color: #f87171; }
+    code {
+      background: #1a1a1a;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Payment <span>successful</span></h1>
+    <p id="status">Confirming your purchase...</p>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const LAMBDA_URL = 'https://ziv5mhmtijteuxkknijcwhukji0mhjid.lambda-url.us-east-2.on.aws';
+
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id');
+    const statusEl = document.getElementById('status');
+    const resultEl = document.getElementById('result');
+
+    if (!sessionId) {
+      statusEl.textContent = '';
+      resultEl.innerHTML = '<p class="error">No session ID found. If you just paid, check your email or contact support.</p>';
+    } else {
+      let attempts = 0;
+      const maxAttempts = 8; // ~16 seconds total
+
+      function checkCredits() {
+        attempts++;
+        fetch(`${LAMBDA_URL}/credits?session_id=${encodeURIComponent(sessionId)}`)
+          .then(res => {
+            if (res.status === 404 && attempts < maxAttempts) {
+              setTimeout(checkCredits, 2000);
+              return null;
+            }
+            return res.json();
+          })
+          .then(data => {
+            if (!data) return; // still retrying
+            if (data.error) {
+              statusEl.textContent = '';
+              resultEl.innerHTML = `<p class="error">${data.error}</p>`;
+              return;
+            }
+            statusEl.textContent = 'Your credits are ready:';
+            resultEl.innerHTML = `
+              <div class="credits-box">
+                <div class="credits-num">${data.creditsRemaining}</div>
+                <p style="margin:0">of ${data.creditsPurchased} anonymous texts remaining</p>
+              </div>
+              <p>Credits ID: <code>${data.creditsId}</code></p>
+              <p>Save this ID — you'll need it to send your messages.</p>
+            `;
+          })
+          .catch(() => {
+            statusEl.textContent = '';
+            resultEl.innerHTML = '<p class="error">Something went wrong. Please contact support with your payment confirmation.</p>';
+          });
+      }
+
+      const spinner = document.createElement('div');
+      spinner.className = 'spinner';
+      resultEl.appendChild(spinner);
+      checkCredits();
+    }
+  </script>
+</body>
+</html>
