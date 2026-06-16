@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sono IO — Send Anonymous Text</title>
+  <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f0f;
+      color: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+    .container { max-width: 480px; width: 100%; }
+    h1 { font-size: 1.6rem; margin-bottom: 6px; }
+    h1 span { color: #4ade80; }
+    .subtitle { color: #6b7280; font-size: 0.9rem; margin-bottom: 28px; }
+    .credits-bar {
+      background: #1a1a1a;
+      border: 1px solid #2d2d2d;
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .credits-label { font-size: 0.85rem; color: #6b7280; }
+    .credits-count { font-size: 1.1rem; font-weight: 600; color: #4ade80; }
+    .credits-count.low { color: #f87171; }
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-size: 0.85rem; color: #9ca3af; margin-bottom: 6px; }
+    input, textarea {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #2d2d2d;
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #f0f0f0;
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus { border-color: #4ade80; }
+    input.error, textarea.error { border-color: #f87171; }
+    textarea { resize: vertical; min-height: 120px; }
+    .char-count {
+      text-align: right;
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    .char-count.warn { color: #fbbf24; }
+    .char-count.over { color: #f87171; }
+    .send-btn {
+      width: 100%;
+      background: #4ade80;
+      color: #0f0f0f;
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+    .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .send-btn:hover:not(:disabled) { opacity: 0.9; }
+    .buy-more-btn {
+      width: 100%;
+      background: transparent;
+      color: #4ade80;
+      border: 1px solid #4ade80;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      text-decoration: none;
+      display: block;
+      text-align: center;
+    }
+    .status-box {
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      margin-top: 16px;
+      display: none;
+    }
+    .status-box.success {
+      background: #052e16;
+      border: 1px solid #166534;
+      color: #4ade80;
+      display: block;
+    }
+    .status-box.error {
+      background: #2d0a0a;
+      border: 1px solid #7f1d1d;
+      color: #f87171;
+      display: block;
+    }
+    .status-box.loading {
+      background: #1a1a1a;
+      border: 1px solid #2d2d2d;
+      color: #9ca3af;
+      display: block;
+    }
+    .proof-link {
+      display: block;
+      margin-top: 8px;
+      color: #4ade80;
+      font-size: 0.85rem;
+      word-break: break-all;
+    }
+    .no-credits {
+      text-align: center;
+      padding: 20px 0;
+      display: none;
+    }
+    .no-credits p { color: #6b7280; margin-bottom: 16px; }
+    .hcaptcha-wrap { margin-bottom: 16px; }
+    .error-msg { font-size: 0.8rem; color: #f87171; margin-top: 4px; display: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Sono <span>IO</span></h1>
+  <p class="subtitle">Send an text message</p>
+
+  <div class="credits-bar">
+    <span class="credits-label">Credits remaining</span>
+    <span class="credits-count" id="credits-display">Loading...</span>
+  </div>
+
+  <div id="send-form">
+    <div class="form-group">
+      <label for="phone">Recipient phone number</label>
+      <input type="tel" id="phone" placeholder="+15551234567" autocomplete="off">
+      <p class="error-msg" id="phone-error">Enter a valid phone number in E.164 format (e.g. +15551234567)</p>
+    </div>
+
+    <div class="form-group">
+      <label for="message">Your message</label>
+      <textarea id="message" placeholder="Type your message here..." maxlength="160"></textarea>
+      <div class="char-count" id="char-count">0 / 160</div>
+      <p class="error-msg" id="message-error">Message must be between 1 and 160 characters</p>
+    </div>
+
+    <div class="hcaptcha-wrap">
+      <div class="h-captcha" data-sitekey="a1cc003c-7700-4a4c-adc8-0d5864c80852"></div>
+    </div>
+
+    <button class="send-btn" id="send-btn" onclick="sendMessage()">
+      Send text
+    </button>
+
+    <div class="status-box" id="status-box"></div>
+  </div>
+
+  <div class="no-credits" id="no-credits">
+    <p>You have used all your credits.</p>
+    <a href="/index.html" class="buy-more-btn">Buy another 5-pack — $5</a>
+  </div>
+</div>
+
+<script>
+  const LAMBDA_URL = 'https://ziv5mhmtijteuxkknijcwhukji0mhjid.lambda-url.us-east-2.on.aws';
+
+  // Get creditsId from URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  let creditsId = urlParams.get('credits_id');
+  let creditsRemaining = 0;
+
+  // If no credits_id in URL, check localStorage as fallback
+  if (!creditsId) {
+    creditsId = localStorage.getItem('sono_credits_id');
+  } else {
+    localStorage.setItem('sono_credits_id', creditsId);
+  }
+
+  // Load credits on page load
+  window.addEventListener('load', function() {
+    if (!creditsId) {
+      document.getElementById('credits-display').textContent = '0';
+      showNoCredits();
+      return;
+    }
+    loadCredits();
+  });
+
+  function loadCredits() {
+    fetch(LAMBDA_URL + '/credits?credits_id=' + encodeURIComponent(creditsId))
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.error || data.creditsRemaining === undefined) {
+          document.getElementById('credits-display').textContent = '?';
+          return;
+        }
+        creditsRemaining = data.creditsRemaining;
+        updateCreditsDisplay();
+      })
+      .catch(function() {
+        document.getElementById('credits-display').textContent = '?';
+      });
+  }
+
+  function updateCreditsDisplay() {
+    const el = document.getElementById('credits-display');
+    el.textContent = creditsRemaining + ' of 5';
+    if (creditsRemaining === 0) {
+      el.classList.add('low');
+      showNoCredits();
+    } else if (creditsRemaining <= 2) {
+      el.classList.add('low');
+    }
+  }
+
+  function showNoCredits() {
+    document.getElementById('send-form').style.display = 'none';
+    document.getElementById('no-credits').style.display = 'block';
+  }
+
+  // Character counter
+  document.getElementById('message').addEventListener('input', function() {
+    const len = this.value.length;
+    const counter = document.getElementById('char-count');
+    counter.textContent = len + ' / 160';
+    counter.className = 'char-count';
+    if (len > 140) counter.classList.add('warn');
+    if (len >= 160) counter.classList.add('over');
+  });
+
+  async function sendMessage() {
+    const phone = document.getElementById('phone').value.trim();
+    const message = document.getElementById('message').value.trim();
+    const btn = document.getElementById('send-btn');
+    const statusBox = document.getElementById('status-box');
+
+    // Reset errors
+    document.getElementById('phone-error').style.display = 'none';
+    document.getElementById('message-error').style.display = 'none';
+    document.getElementById('phone').classList.remove('error');
+    document.getElementById('message').classList.remove('error');
+
+    // Validate phone
+    if (!/^\+[1-9]\d{6,14}$/.test(phone)) {
+      document.getElementById('phone-error').style.display = 'block';
+      document.getElementById('phone').classList.add('error');
+      return;
+    }
+
+    // Validate message
+    if (message.length === 0 || message.length > 160) {
+      document.getElementById('message-error').style.display = 'block';
+      document.getElementById('message').classList.add('error');
+      return;
+    }
+
+    // Get hCaptcha token
+    const captchaToken = hcaptcha.getResponse();
+    if (!captchaToken) {
+      statusBox.className = 'status-box error';
+      statusBox.textContent = 'Please complete the captcha first.';
+      return;
+    }
+
+    // Send
+    btn.disabled = true;
+    statusBox.className = 'status-box loading';
+    statusBox.textContent = 'Sending your message...';
+
+    try {
+      const res = await fetch(LAMBDA_URL + '/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          creditsId: creditsId,
+          recipientPhone: phone,
+          message: message,
+          captchaToken: captchaToken
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        creditsRemaining = data.creditsRemaining;
+        updateCreditsDisplay();
+
+        document.getElementById('phone').value = '';
+        document.getElementById('message').value = '';
+        document.getElementById('char-count').textContent = '0 / 160';
+        hcaptcha.reset();
+
+        statusBox.className = 'status-box success';
+        statusBox.innerHTML =
+          'Message sent successfully. ' +
+          creditsRemaining + ' credit' + (creditsRemaining !== 1 ? 's' : '') + ' remaining.' +
+          (data.sendId ?
+            '<a class="proof-link" href="/verify.html?id=' + data.sendId + '">View proof of delivery</a>'
+            : '');
+      } else {
+        statusBox.className = 'status-box error';
+        statusBox.textContent = data.error || 'Something went wrong. Please try again.';
+        hcaptcha.reset();
+      }
+    } catch (err) {
+      statusBox.className = 'status-box error';
+      statusBox.textContent = 'Network error. Please check your connection and try again.';
+      hcaptcha.reset();
+    }
+
+    btn.disabled = false;
+  }
+</script>
+</body>
+</html>
