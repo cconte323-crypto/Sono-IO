@@ -106,7 +106,12 @@
               '<p style="margin:0">of ' + data.creditsPurchased + ' anonymous texts remaining</p>' +
             '</div>' +
             '<p>Credits ID: <code>' + data.creditsId + '</code></p>' +
-            '<p style="color:#9ca3af;font-size:0.85rem;">Save or copy this ID — you will need it to send your messages on the next page.</p>';
+            '<p style="margin-top:16px;">
+  <a href="/send.html?credits_id=" id="send-link"
+     style="display:inline-block;background:#4ade80;color:#0f0f0f;text-decoration:none;font-weight:600;border-radius:8px;padding:14px 32px;font-size:1rem;">
+    Start sending messages →
+  </a>
+</p>';
         })
         .catch(function() {
           if (attempts < maxAttempts) {
