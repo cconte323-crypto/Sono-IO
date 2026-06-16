@@ -18,10 +18,10 @@
       box-sizing: border-box;
       text-align: center;
     }
-    .container { max-width: 480px; }
+    .container { max-width: 480px; width: 100%; }
     h1 { font-size: 1.8rem; margin-bottom: 8px; }
     h1 span { color: #4ade80; }
-    p { color: #9ca3af; line-height: 1.7; }
+    p { color: #9ca3af; line-height: 1.7; margin: 0 0 12px; }
     .credits-box {
       background: #1a1a1a;
       border: 1px solid #2d2d2d;
@@ -33,102 +33,100 @@
       font-size: 3rem;
       font-weight: 700;
       color: #4ade80;
+      line-height: 1;
+      margin-bottom: 8px;
     }
     .spinner {
       border: 3px solid #2d2d2d;
       border-top: 3px solid #4ade80;
       border-radius: 50%;
-      width: 24px;
-      height: 24px;
+      width: 32px;
+      height: 32px;
       animation: spin 1s linear infinite;
-      margin: 16px auto;
+      margin: 24px auto;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .send-btn {
+      display: inline-block;
+      background: #4ade80;
+      color: #0f0f0f;
+      text-decoration: none;
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 14px 32px;
+      font-size: 1rem;
+      margin-top: 8px;
+    }
     .error { color: #f87171; }
     code {
       background: #1a1a1a;
-      padding: 2px 6px;
+      padding: 2px 8px;
       border-radius: 4px;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       word-break: break-all;
     }
+    #status { font-size: 1rem; margin-bottom: 0; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Payment <span>successful</span></h1>
-    <p id="status">Confirming your purchase...</p>
-    <div id="result"></div>
-  </div>
+<div class="container">
+  <h1>Payment <span>successful</span></h1>
+  <p id="status">Confirming your purchase...</p>
+  <div id="spinner" class="spinner"></div>
+  <div id="result"></div>
+</div>
 
 <script>
-  const LAMBDA_URL = 'https://ziv5mhmtijteuxkknijcwhukji0mhjid.lambda-url.us-east-2.on.aws';
+  var LAMBDA_URL = 'https://ziv5mhmtijteuxkknijcwhukji0mhjid.lambda-url.us-east-2.on.aws';
 
-  const params = new URLSearchParams(window.location.search);
-  const sessionId = params.get('session_id');
-  const statusEl = document.getElementById('status');
-  const resultEl = document.getElementById('result');
+  var params = new URLSearchParams(window.location.search);
+  var sessionId = params.get('session_id');
+  var statusEl = document.getElementById('status');
+  var spinnerEl = document.getElementById('spinner');
+  var resultEl = document.getElementById('result');
 
-  if (!sessionId) {
+  function showError(msg) {
+    spinnerEl.style.display = 'none';
     statusEl.textContent = '';
-    resultEl.innerHTML = '<p class="error">No session ID found. If you just paid, check your email or contact support.</p>';
-  } else {
-    let attempts = 0;
-    const maxAttempts = 15;
+    resultEl.innerHTML = '<p class="error">' + msg + '</p>';
+  }
 
-    function checkCredits() {
-      attempts++;
-      statusEl.textContent = 'Confirming your purchase... (' + attempts + ')';
+  function showSuccess(data) {
+    spinnerEl.style.display = 'none';
+    statusEl.textContent = 'Your credits are ready:';
+    resultEl.innerHTML =
+      '<div class="credits-box">' +
+        '<div class="credits-num">' + data.creditsRemaining + '</div>' +
+        '<p>of ' + data.creditsPurchased + ' anonymous texts remaining</p>' +
+      '</div>' +
+      '<p>Credits ID: <code>' + data.creditsId + '</code></p>' +
+      '<a class="send-btn" href="/send.html?credits_id=' + encodeURIComponent(data.creditsId) + '">' +
+        'Start sending messages &rarr;' +
+      '</a>';
+  }
 
-      fetch(LAMBDA_URL + '/credits?session_id=' + encodeURIComponent(sessionId))
-        .then(function(res) {
-          if (res.status === 404 && attempts < maxAttempts) {
-            setTimeout(checkCredits, 3000);
-            return null;
-          }
-          return res.json();
-        })
-        .then(function(data) {
-          if (!data) return;
-          if (data.error && attempts < maxAttempts) {
-            setTimeout(checkCredits, 3000);
-            return;
-          }
-          if (data.error) {
-            statusEl.textContent = '';
-            resultEl.innerHTML = '<p class="error">' + data.error + '</p>';
-            return;
-          }
-          statusEl.textContent = 'Your credits are ready:';
-          resultEl.innerHTML =
-            '<div class="credits-box">' +
-              '<div class="credits-num">' + data.creditsRemaining + '</div>' +
-              '<p style="margin:0">of ' + data.creditsPurchased + ' anonymous texts remaining</p>' +
-            '</div>' +
-            '<p>Credits ID: <code>' + data.creditsId + '</code></p>' +
-            '<p style="margin-top:16px;">
-            document.getElementById('send-link').href = '/send.html?credits_id=' + data.creditsId;
-  <a href="/send.html?credits_id=" id="send-link"
-     style="display:inline-block;background:#4ade80;color:#0f0f0f;text-decoration:none;font-weight:600;border-radius:8px;padding:14px 32px;font-size:1rem;">
-    Start sending messages →
-  </a>
-</p>';
-        })
-        .catch(function() {
-          if (attempts < maxAttempts) {
-            setTimeout(checkCredits, 3000);
-          } else {
-            statusEl.textContent = '';
-            resultEl.innerHTML = '<p class="error">Something went wrong. Please contact support with your payment confirmation.</p>';
-          }
-        });
+  function fetchCredits() {
+    if (!sessionId) {
+      showError('No session ID found. Please contact support if you completed a payment.');
+      return;
     }
 
-    var spinner = document.createElement('div');
-    spinner.className = 'spinner';
-    resultEl.appendChild(spinner);
-    setTimeout(checkCredits, 2000);
+    fetch(LAMBDA_URL + '/credits?session_id=' + encodeURIComponent(sessionId))
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.creditsRemaining !== undefined) {
+          showSuccess(data);
+        } else {
+          showError('Could not confirm your purchase. Please contact support with your session ID: ' + sessionId);
+        }
+      })
+      .catch(function(err) {
+        showError('Network error. Please refresh the page or contact support.');
+      });
   }
+
+  // Wait 4 seconds then fetch once — gives webhook time to fire
+  setTimeout(fetchCredits, 4000);
 </script>
 </body>
 </html>
