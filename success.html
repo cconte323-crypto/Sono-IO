@@ -61,59 +61,68 @@
     <div id="result"></div>
   </div>
 
-  <script>
-    const LAMBDA_URL = 'https://ziv5mhmtijteuxkknijcwhukji0mhjid.lambda-url.us-east-2.on.aws';
+<script>
+  const LAMBDA_URL = 'https://ziv5mhmtijteuxkknijcwhukji0mhjid.lambda-url.us-east-2.on.aws';
 
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get('session_id');
-    const statusEl = document.getElementById('status');
-    const resultEl = document.getElementById('result');
+  const params = new URLSearchParams(window.location.search);
+  const sessionId = params.get('session_id');
+  const statusEl = document.getElementById('status');
+  const resultEl = document.getElementById('result');
 
-    if (!sessionId) {
-      statusEl.textContent = '';
-      resultEl.innerHTML = '<p class="error">No session ID found. If you just paid, check your email or contact support.</p>';
-    } else {
-      let attempts = 0;
-      const maxAttempts = 15; // ~30 seconds total
+  if (!sessionId) {
+    statusEl.textContent = '';
+    resultEl.innerHTML = '<p class="error">No session ID found. If you just paid, check your email or contact support.</p>';
+  } else {
+    let attempts = 0;
+    const maxAttempts = 15;
 
-      function checkCredits() {
-        attempts++;
-        fetch(`${LAMBDA_URL}/credits?session_id=${encodeURIComponent(sessionId)}`)
-          .then(res => {
-            if (res.status === 404 && attempts < maxAttempts) {
-              setTimeout(checkCredits, 3000);
-              return null;
-            }
-            return res.json();
-          })
-          .then(data => {
-            if (!data) return; // still retrying
-            if (data.error) {
-              statusEl.textContent = '';
-              resultEl.innerHTML = `<p class="error">${data.error}</p>`;
-              return;
-            }
-            statusEl.textContent = 'Your credits are ready:';
-            resultEl.innerHTML = `
-              <div class="credits-box">
-                <div class="credits-num">${data.creditsRemaining}</div>
-                <p style="margin:0">of ${data.creditsPurchased} anonymous texts remaining</p>
-              </div>
-              <p>Credits ID: <code>${data.creditsId}</code></p>
-              <p>Save this ID — you'll need it to send your messages.</p>
-            `;
-          })
-          .catch(() => {
+    function checkCredits() {
+      attempts++;
+      statusEl.textContent = 'Confirming your purchase... (' + attempts + ')';
+
+      fetch(LAMBDA_URL + '/credits?session_id=' + encodeURIComponent(sessionId))
+        .then(function(res) {
+          if (res.status === 404 && attempts < maxAttempts) {
+            setTimeout(checkCredits, 3000);
+            return null;
+          }
+          return res.json();
+        })
+        .then(function(data) {
+          if (!data) return;
+          if (data.error && attempts < maxAttempts) {
+            setTimeout(checkCredits, 3000);
+            return;
+          }
+          if (data.error) {
+            statusEl.textContent = '';
+            resultEl.innerHTML = '<p class="error">' + data.error + '</p>';
+            return;
+          }
+          statusEl.textContent = 'Your credits are ready:';
+          resultEl.innerHTML =
+            '<div class="credits-box">' +
+              '<div class="credits-num">' + data.creditsRemaining + '</div>' +
+              '<p style="margin:0">of ' + data.creditsPurchased + ' anonymous texts remaining</p>' +
+            '</div>' +
+            '<p>Credits ID: <code>' + data.creditsId + '</code></p>' +
+            '<p style="color:#9ca3af;font-size:0.85rem;">Save or copy this ID — you will need it to send your messages on the next page.</p>';
+        })
+        .catch(function() {
+          if (attempts < maxAttempts) {
+            setTimeout(checkCredits, 3000);
+          } else {
             statusEl.textContent = '';
             resultEl.innerHTML = '<p class="error">Something went wrong. Please contact support with your payment confirmation.</p>';
-          });
-      }
-
-      const spinner = document.createElement('div');
-      spinner.className = 'spinner';
-      resultEl.appendChild(spinner);
-      checkCredits();
+          }
+        });
     }
-  </script>
+
+    var spinner = document.createElement('div');
+    spinner.className = 'spinner';
+    resultEl.appendChild(spinner);
+    setTimeout(checkCredits, 2000);
+  }
+</script>
 </body>
 </html>
