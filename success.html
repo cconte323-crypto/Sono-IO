@@ -81,7 +81,7 @@
         fetch(`${LAMBDA_URL}/credits?session_id=${encodeURIComponent(sessionId)}`)
           .then(res => {
             if (res.status === 404 && attempts < maxAttempts) {
-              setTimeout(checkCredits, 2000);
+              setTimeout(checkCredits, 3000);
               return null;
             }
             return res.json();
