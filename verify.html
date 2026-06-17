@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sono IO — Proof of Delivery</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f0f;
+      color: #f0f0f0;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container { max-width: 580px; margin: 0 auto; }
+    h1 { font-size: 1.6rem; margin-bottom: 6px; }
+    h1 span { color: #4ade80; }
+    .subtitle { color: #6b7280; font-size: 0.9rem; margin-bottom: 28px; }
+    .spinner {
+      border: 3px solid #2d2d2d;
+      border-top: 3px solid #4ade80;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      animation: spin 1s linear infinite;
+      margin: 40px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .proof-card {
+      background: #1a1a1a;
+      border: 1px solid #2d2d2d;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .proof-card-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid #2d2d2d;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .proof-card-header h2 {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-delivered { background: #4ade80; }
+    .dot-queued { background: #fbbf24; }
+    .dot-failed { background: #f87171; }
+    .proof-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 18px;
+      border-bottom: 1px solid #1f1f1f;
+      font-size: 0.88rem;
+    }
+    .proof-row:last-child { border-bottom: none; }
+    .proof-label {
+      color: #6b7280;
+      width: 160px;
+      flex-shrink: 0;
+      padding-top: 1px;
+    }
+    .proof-value {
+      color: #f0f0f0;
+      word-break: break-all;
+      font-family: monospace;
+      font-size: 0.82rem;
+    }
+    .proof-value.status-delivered { color: #4ade80; font-weight: 600; font-family: inherit; }
+    .proof-value.status-queued { color: #fbbf24; font-family: inherit; }
+    .badge-verified {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #052e16;
+      border: 1px solid #166534;
+      color: #4ade80;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 20px;
+    }
+    .download-btn {
+      display: block;
+      background: #4ade80;
+      color: #0f0f0f;
+      text-decoration: none;
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 13px 24px;
+      font-size: 0.95rem;
+      text-align: center;
+      margin-top: 16px;
+    }
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 16px;
+      color: #6b7280;
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+    .back-link:hover { color: #9ca3af; }
+    .error-box {
+      background: #2d0a0a;
+      border: 1px solid #7f1d1d;
+      border-radius: 10px;
+      padding: 20px;
+      color: #f87171;
+      text-align: center;
+      margin-top: 40px;
+    }
+    .not-found-yet {
+      background: #1a1a1a;
+      border: 1px solid #2d2d2d;
+      border-radius: 10px;
+      padding: 20px;
+      color: #9ca3af;
+      text-align: center;
+      margin-top: 40px;
+    }
+    .legal {
+      font-size: 0.78rem;
+      color: #374151;
+      line-height: 1.6;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #1f1f1f;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Sono <span>IO</span></h1>
+  <p class="subtitle">Proof of delivery verification</p>
+
+  <div id="loading"><div class="spinner"></div></div>
+  <div id="result"></div>
+</div>
+
+<script>
+  var LAMBDA_URL = 'https://ziv5mhmtijteuxkknijcwhukji0mhjid.lambda-url.us-east-2.on.aws';
+
+  var params = new URLSearchParams(window.location.search);
+  var id = params.get('id');
+  var loadingEl = document.getElementById('loading');
+  var resultEl = document.getElementById('result');
+
+  function formatDate(iso) {
+    if (!iso) return 'Pending';
+    var d = new Date(iso);
+    return d.toUTCString();
+  }
+
+  function getStatusClass(status) {
+    if (status === 'delivered') return 'status-delivered';
+    if (status === 'queued' || status === 'sent') return 'status-queued';
+    return '';
+  }
+
+  function getDotClass(status) {
+    if (status === 'delivered') return 'dot-delivered';
+    if (status === 'queued' || status === 'sent') return 'dot-queued';
+    return 'dot-failed';
+  }
+
+  function getStatusLabel(status) {
+    if (status === 'delivered') return 'Delivered';
+    if (status === 'queued') return 'Queued — delivery pending';
+    if (status === 'sent') return 'Sent — awaiting carrier confirmation';
+    if (status === 'failed') return 'Failed';
+    return status;
+  }
+
+  function render(data) {
+    loadingEl.style.display = 'none';
+
+    var isDelivered = data.status === 'delivered';
+
+    var html =
+      '<div class="badge-verified">' +
+        '<svg width="14" height="14" viewBox="0 0 14 14" fill="none">' +
+          '<circle cx="7" cy="7" r="7" fill="#166534"/>' +
+          '<path d="M4 7l2 2 4-4" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '</svg>' +
+        'Cryptographically verified' +
+      '</div>' +
+
+      '<div class="proof-card">' +
+        '<div class="proof-card-header">' +
+          '<div class="status-dot ' + getDotClass(data.status) + '"></div>' +
+          '<h2>Delivery status</h2>' +
+        '</div>' +
+        '<div class="proof-row"><span class="proof-label">Message ID</span><span class="proof-value">' + data.id + '</span></div>' +
+        '<div class="proof-row"><span class="proof-label">Status</span><span class="proof-value ' + getStatusClass(data.status) + '">' + getStatusLabel(data.status) + '</span></div>' +
+        '<div class="proof-row"><span class="proof-label">Sent at (UTC)</span><span class="proof-value">' + formatDate(data.sentAt) + '</span></div>' +
+        '<div class="proof-row"><span class="proof-label">Delivered at (UTC)</span><span class="proof-value">' + formatDate(data.deliveredAt) + '</span></div>' +
+        '<div class="proof-row"><span class="proof-label">Recipient (hashed)</span><span class="proof-value">sha256:' + (data.recipientPhoneHash ? data.recipientPhoneHash.slice(0, 20) + '...' : 'N/A') + '</span></div>' +
+      '</div>' +
+
+      '<div class="proof-card">' +
+        '<div class="proof-card-header"><h2>Cryptographic integrity</h2></div>' +
+        '<div class="proof-row"><span class="proof-label">Message SHA-256</span><span class="proof-value">' + (data.bodySha256 || 'N/A') + '</span></div>' +
+        '<div class="proof-row"><span class="proof-label">Twilio SID</span><span class="proof-value">' + (data.twilioSid || 'N/A') + '</span></div>' +
+        '<div class="proof-row"><span class="proof-label">Proof version</span><span class="proof-value">v1</span></div>' +
+      '</div>';
+
+    if (isDelivered && data.proofUrl) {
+      html += '<a class="download-btn" href="' + data.proofUrl + '" target="_blank">Download PDF proof receipt</a>';
+    } else if (isDelivered) {
+      html += '<div class="not-found-yet"><p>PDF proof is being generated — check back in a moment.</p></div>';
+    } else {
+      html += '<div class="not-found-yet"><p>PDF proof will be available once delivery is confirmed by the carrier.</p></div>';
+    }
+
+    html +=
+      '<a class="back-link" href="/index.html">← Back to Sono IO</a>' +
+      '<p class="legal">' +
+        'The sender\'s identity is not stored. The recipient phone number is stored only as a one-way SHA-256 hash and cannot be reversed. ' +
+        'This page constitutes proof that a message with the above SHA-256 hash was submitted for delivery to the specified recipient at the stated time. ' +
+        'Carrier delivery confirmation is provided by Twilio. Sono IO does not store message content after sending.' +
+      '</p>';
+
+    resultEl.innerHTML = html;
+  }
+
+  if (!id) {
+    loadingEl.style.display = 'none';
+    resultEl.innerHTML =
+      '<div class="error-box">' +
+        '<p>No message ID provided.</p>' +
+        '<p style="margin-top:8px;font-size:0.85rem;">This page requires a valid message ID in the URL.</p>' +
+      '</div>';
+  } else {
+    fetch(LAMBDA_URL + '/verify?id=' + encodeURIComponent(id))
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.error) {
+          loadingEl.style.display = 'none';
+          resultEl.innerHTML =
+            '<div class="error-box">' +
+              '<p>' + data.error + '</p>' +
+              '<p style="margin-top:8px;font-size:0.85rem;">Message ID: ' + id + '</p>' +
+            '</div>';
+        } else {
+          render(data);
+        }
+      })
+      .catch(function() {
+        loadingEl.style.display = 'none';
+        resultEl.innerHTML =
+          '<div class="error-box">' +
+            '<p>Could not load proof record. Please try again.</p>' +
+          '</div>';
+      });
+  }
+</script>
+</body>
+</html>
