@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sono IO — SMS Opt-In & Consent Policy</title>
+  <title>Sono IO — SMS Consent & Messaging Program</title>
   <style>
     body {
       margin: 0;
@@ -14,19 +14,47 @@
       line-height: 1.7;
     }
     .container { max-width: 640px; margin: 0 auto; }
-    h1 { font-size: 1.8rem; margin-bottom: 8px; }
+    h1 { font-size: 1.6rem; margin-bottom: 4px; }
     h1 span { color: #4ade80; }
-    h2 { font-size: 1.2rem; margin-top: 32px; color: #4ade80; }
+    .subtitle { color: #6b7280; font-size: 0.9rem; margin-bottom: 28px; }
+    h2 { font-size: 1.1rem; margin-top: 32px; color: #4ade80; }
     p, li { color: #9ca3af; font-size: 0.95rem; }
-    .badge {
-      display: inline-block;
+    .consent-box {
       background: #1a1a1a;
+      border: 2px solid #4ade80;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0 28px;
+    }
+    .consent-box-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #4ade80;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+    .consent-statement {
+      color: #f0f0f0;
+      font-size: 0.95rem;
+      margin-bottom: 14px;
+    }
+    .consent-action-demo {
+      background: #111;
       border: 1px solid #2d2d2d;
-      border-radius: 999px;
-      padding: 6px 18px;
-      font-size: 0.85rem;
-      color: #6b7280;
-      margin-bottom: 24px;
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .consent-action-demo input {
+      margin-top: 3px;
+      flex-shrink: 0;
+    }
+    .consent-action-demo label {
+      font-size: 0.88rem;
+      color: #d1d5db;
     }
     .example-box {
       background: #1a1a1a;
@@ -38,60 +66,160 @@
       font-size: 0.85rem;
       color: #d1d5db;
     }
+    .program-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .program-card {
+      background: #1a1a1a;
+      border: 1px solid #2d2d2d;
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .program-card-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #f0f0f0;
+      margin-bottom: 6px;
+    }
+    .program-card-desc {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin: 0;
+    }
+    .divider {
+      border: none;
+      border-top: 1px solid #2d2d2d;
+      margin: 32px 0;
+    }
     .back-link {
       display: inline-block;
-      margin-top: 40px;
+      margin-top: 16px;
       color: #4ade80;
       text-decoration: none;
       font-size: 0.9rem;
     }
     a { color: #4ade80; }
+    .badge {
+      display: inline-block;
+      background: #1a1a1a;
+      border: 1px solid #2d2d2d;
+      border-radius: 999px;
+      padding: 6px 18px;
+      font-size: 0.85rem;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="badge">SMS Messaging Policy</div>
-    <h1>Sono <span>IO</span> — Opt-In & Consent</h1>
-    <p>This page explains how messages are sent through Sono IO, how recipients
-       can stop receiving them, and how sender consent works.</p>
+    <div class="badge">SMS Consent & Messaging Program Disclosure</div>
+    <h1>Sono <span>IO</span> — Messaging consent</h1>
+    <p class="subtitle">This page explains exactly how consent is collected for SMS messages sent through Sono IO. This is separate and distinct from our general Terms of Service and Privacy Policy.</p>
 
-    <h2>How messages are sent</h2>
-    <p>Sono IO is a paid service that allows a sender to send a single
-       text message to a phone number of their choosing. The sender pays for a
-       pack of 5 messages and provides the recipient's phone number and message
-       content directly. Sono IO does not send marketing, promotional, or bulk
-       messages — each message is a single, individually composed text initiated
-       by a paying sender.</p>
+    <div class="consent-box">
+      <div class="consent-box-label">The exact opt-in mechanism</div>
+      <p class="consent-statement">
+        Sono IO is a paid, single-message sending service. There is no
+        account creation, subscription, or recurring messaging program.
+        Each time a person uses Sono IO to send a message, they must
+        actively check a standalone consent box before the message can
+        be sent. This checkbox is unchecked by default and is not
+        combined with payment, account creation, or any other action.
+      </p>
+      <p class="consent-statement" style="margin-bottom:8px;">
+        This is the exact checkbox shown to the sender on our send form,
+        directly above the send button:
+      </p>
+      <div class="consent-action-demo">
+        <input type="checkbox" disabled>
+        <label>I confirm I am authorized to send this message to the
+        recipient I have entered, and I agree this message will be sent
+        as a single, one-time text. I understand Sono IO does not
+        send recurring or marketing messages.</label>
+      </div>
+    </div>
 
-    <h2>Sender consent</h2>
-    <p>By using Sono IO, the sender agrees to our Terms of Service, which require
-       that messages comply with all applicable laws and are not used for
-       harassment, threats, spam, or illegal purposes. Sender IP addresses are
-       logged (in hashed form) for abuse prevention.</p>
+    <h2>Who is consenting, and to what</h2>
+    <p>
+      Sono IO's messaging product works differently from a typical
+      subscription SMS program. The <strong>sender</strong> — the person
+      using our service and paying for it — is the party giving consent.
+      They consent to: (1) Sono IO sending one message on their behalf
+      to a number they provide, and (2) confirming they are authorized
+      to contact that recipient. This consent is collected via the
+      checkbox shown above, every single time, with no exceptions.
+    </p>
+    <p>
+      Sono IO does not collect, store, or solicit consent from message
+      <strong>recipients</strong>, because recipients are not signing up
+      for a recurring messaging program. Each message is a single,
+      one-time, non-recurring text initiated and paid for by the sender.
+    </p>
 
-    <h2>Recipient opt-out</h2>
-    <p>Every message sent through Sono IO includes opt-out instructions. A
-       recipient can reply <strong>STOP</strong> to immediately stop receiving
-       any further messages from Sono IO's number pool. This is honored
-       automatically and immediately.</p>
+    <h2>Messaging program type</h2>
+    <div class="program-grid">
+      <div class="program-card">
+        <div class="program-card-title">Informational</div>
+        <p class="program-card-desc">All Sono IO messages are
+        informational, single-instance texts composed by the sender.
+        No promotional or marketing content is ever sent by Sono IO
+        itself.</p>
+      </div>
+      <div class="program-card">
+        <div class="program-card-title">Not promotional</div>
+        <p class="program-card-desc">Sono IO does not operate a
+        promotional or marketing messaging program of any kind. We do
+        not send bulk, automated, or recurring messages.</p>
+      </div>
+    </div>
 
     <h2>Sample message</h2>
-    <p>Below is an example of the exact format every message sent through
-       Sono IO follows:</p>
+    <p>Below is the exact format every message sent through Sono IO follows:</p>
     <div class="example-box">
       Hey, just wanted to let you know the package arrived safely. Thanks!<br><br>
-      — Sent  via SonoIO.com<br>
+      -- Sent via SonoIO.com<br>
       Reply STOP to opt out of future messages.
     </div>
 
+    <h2>How to revoke consent / opt out</h2>
+    <p>
+      Any message recipient can reply <strong>STOP</strong> to any
+      message received through Sono IO to immediately and permanently
+      block that recipient's number from receiving any further messages
+      via our platform. This is honored automatically and takes effect
+      immediately. Recipients can also reply <strong>HELP</strong> for
+      assistance, which returns our support contact information.
+    </p>
+
     <h2>Message frequency</h2>
-    <p>Recipients receive messages only when a sender chooses to send one to
-       their number. There is no recurring or scheduled messaging — each
-       message is a one-time send initiated by a human sender.</p>
+    <p>
+      There is no recurring or scheduled messaging. Each message is a
+      single, one-time send initiated by a human sender at the moment
+      of purchase. A recipient cannot receive more than one message
+      per sender transaction.
+    </p>
+
+    <hr class="divider">
+
+    <h2>This page versus our other policies</h2>
+    <p>
+      This page describes <strong>only</strong> our SMS consent
+      mechanism. It is intentionally separate from our
+      <a href="/terms.html">Terms of Service</a> and
+      <a href="/privacy.html">Privacy Policy</a>, which govern other
+      aspects of using Sono IO. Agreeing to receive messages is never a
+      requirement to use any other part of our service, and is
+      collected exclusively through the standalone checkbox described
+      above.
+    </p>
 
     <h2>Contact</h2>
-    <p>Questions about this policy can be sent to
-       <a href="mailto:cconte323@gmail.com">cconte323@gmail.com</a>.</p>
+    <p>Questions about this consent policy can be sent to
+       <a href="mailto:cconte323@gmail.com">YOUR_EMAIL@example.com</a>.</p>
 
     <a href="/" class="back-link">← Back to Sono IO</a>
   </div>
