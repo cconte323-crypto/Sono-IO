@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sono IO — Send Anonymous Text</title>
+  <title>Sono IO — Send a Text</title>
+  <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -58,6 +59,40 @@
     }
     .char-count.warn { color: #fbbf24; }
     .char-count.over { color: #f87171; }
+    .consent-box {
+      background: #1a1a1a;
+      border: 1px solid #2d2d2d;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .consent-box.error { border-color: #f87171; }
+    .consent-box input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 1px;
+      flex-shrink: 0;
+      accent-color: #4ade80;
+      cursor: pointer;
+    }
+    .consent-box label {
+      font-size: 0.82rem;
+      color: #d1d5db;
+      line-height: 1.5;
+      margin: 0;
+      cursor: pointer;
+    }
+    .consent-box a { color: #4ade80; }
+    .consent-error-msg {
+      font-size: 0.78rem;
+      color: #f87171;
+      margin-top: -10px;
+      margin-bottom: 18px;
+      display: none;
+    }
     .send-btn {
       width: 100%;
       background: #4ade80;
@@ -129,13 +164,11 @@
     .hcaptcha-wrap { margin-bottom: 16px; }
     .error-msg { font-size: 0.8rem; color: #f87171; margin-top: 4px; display: none; }
   </style>
-    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
-  </head>
 </head>
 <body>
 <div class="container">
   <h1>Sono <span>IO</span></h1>
-  <p class="subtitle">Send an text message</p>
+  <p class="subtitle">Send a private text message</p>
 
   <div class="credits-bar">
     <span class="credits-label">Credits remaining</span>
@@ -156,12 +189,24 @@
       <p class="error-msg" id="message-error">Message must be between 1 and 160 characters</p>
     </div>
 
+    <div class="consent-box" id="consent-box">
+      <input type="checkbox" id="consent-checkbox">
+      <label for="consent-checkbox">
+        I confirm I am authorized to send this message to the recipient
+        I have entered, and I agree this message will be sent as a
+        single, one-time text. I understand Sono IO does not send
+        recurring or marketing messages. Read our
+        <a href="/opt-in.html" target="_blank">consent policy</a>.
+      </label>
+    </div>
+    <p class="consent-error-msg" id="consent-error">You must confirm consent before sending</p>
+
     <div class="hcaptcha-wrap">
       <div class="h-captcha" data-sitekey="a1cc003c-7700-4a4c-adc8-0d5864c80852"></div>
     </div>
 
     <button class="send-btn" id="send-btn" onclick="sendMessage()">
-      Send text
+      Send message
     </button>
 
     <div class="status-box" id="status-box"></div>
@@ -174,21 +219,19 @@
 </div>
 
 <script>
-  const LAMBDA_URL = 'https://ziv5mhmtijteuxkknijcwhukji0mhjid.lambda-url.us-east-2.on.aws';
+  var LAMBDA_URL = 'https://ziv5mhmtijteuxkknijcwhukji0mhjid.lambda-url.us-east-2.on.aws';
 
-  // Get creditsId from URL params
-  const urlParams = new URLSearchParams(window.location.search);
-  let creditsId = urlParams.get('credits_id');
-  let creditsRemaining = 0;
+  var urlParams = new URLSearchParams(window.location.search);
+  var creditsId = urlParams.get('credits_id');
 
-  // If no credits_id in URL, check localStorage as fallback
   if (!creditsId) {
     creditsId = localStorage.getItem('sono_credits_id');
   } else {
     localStorage.setItem('sono_credits_id', creditsId);
   }
 
-  // Load credits on page load
+  var creditsRemaining = 0;
+
   window.addEventListener('load', function() {
     if (!creditsId) {
       document.getElementById('credits-display').textContent = '0';
@@ -215,7 +258,7 @@
   }
 
   function updateCreditsDisplay() {
-    const el = document.getElementById('credits-display');
+    var el = document.getElementById('credits-display');
     el.textContent = creditsRemaining + ' of 5';
     if (creditsRemaining === 0) {
       el.classList.add('low');
@@ -230,57 +273,67 @@
     document.getElementById('no-credits').style.display = 'block';
   }
 
-  // Character counter
   document.getElementById('message').addEventListener('input', function() {
-    const len = this.value.length;
-    const counter = document.getElementById('char-count');
+    var len = this.value.length;
+    var counter = document.getElementById('char-count');
     counter.textContent = len + ' / 160';
     counter.className = 'char-count';
     if (len > 140) counter.classList.add('warn');
     if (len >= 160) counter.classList.add('over');
   });
 
-  async function sendMessage() {
-    const phone = document.getElementById('phone').value.trim();
-    const message = document.getElementById('message').value.trim();
-    const btn = document.getElementById('send-btn');
-    const statusBox = document.getElementById('status-box');
+  document.getElementById('consent-checkbox').addEventListener('change', function() {
+    if (this.checked) {
+      document.getElementById('consent-box').classList.remove('error');
+      document.getElementById('consent-error').style.display = 'none';
+    }
+  });
 
-    // Reset errors
+  async function sendMessage() {
+    var phone = document.getElementById('phone').value.trim();
+    var message = document.getElementById('message').value.trim();
+    var consentChecked = document.getElementById('consent-checkbox').checked;
+    var btn = document.getElementById('send-btn');
+    var statusBox = document.getElementById('status-box');
+
     document.getElementById('phone-error').style.display = 'none';
     document.getElementById('message-error').style.display = 'none';
+    document.getElementById('consent-error').style.display = 'none';
     document.getElementById('phone').classList.remove('error');
     document.getElementById('message').classList.remove('error');
+    document.getElementById('consent-box').classList.remove('error');
 
-    // Validate phone
     if (!/^\+[1-9]\d{6,14}$/.test(phone)) {
       document.getElementById('phone-error').style.display = 'block';
       document.getElementById('phone').classList.add('error');
       return;
     }
 
-    // Validate message
     if (message.length === 0 || message.length > 160) {
       document.getElementById('message-error').style.display = 'block';
       document.getElementById('message').classList.add('error');
       return;
     }
 
-    // Get hCaptcha token
-    const captchaToken = hcaptcha.getResponse();
+    if (!consentChecked) {
+      document.getElementById('consent-error').style.display = 'block';
+      document.getElementById('consent-box').classList.add('error');
+      return;
+    }
+
+    var captchaToken = hcaptcha.getResponse();
     if (!captchaToken) {
       statusBox.className = 'status-box error';
       statusBox.textContent = 'Please complete the captcha first.';
       return;
     }
 
-    // Send
     btn.disabled = true;
     statusBox.className = 'status-box loading';
     statusBox.textContent = 'Sending your message...';
 
     try {
-      const res = await fetch(LAMBDA_URL + '/send', {
+      var res = await fetch(LAMBDA_URL + '/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -291,7 +344,7 @@
         })
       });
 
-      const data = await res.json();
+      var data = await res.json();
 
       if (res.ok) {
         creditsRemaining = data.creditsRemaining;
@@ -300,6 +353,7 @@
         document.getElementById('phone').value = '';
         document.getElementById('message').value = '';
         document.getElementById('char-count').textContent = '0 / 160';
+        document.getElementById('consent-checkbox').checked = false;
         hcaptcha.reset();
 
         statusBox.className = 'status-box success';
